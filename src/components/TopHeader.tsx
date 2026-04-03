@@ -17,11 +17,11 @@ export const TopHeader = ({ onSearch }: TopHeaderProps) => {
   };
 
   return (
-    <header className="flex h-14 items-center gap-2 border-b border-border bg-background px-3 md:h-16 md:gap-4 md:px-6">
+    <header className="flex flex-wrap items-center gap-2 border-b border-border bg-background px-3 py-2 md:h-16 md:flex-nowrap md:gap-4 md:px-6 md:py-0">
       <SidebarTrigger className="shrink-0" />
       <BrandLogo showText={false} className="shrink-0" imageClassName="h-8 w-8 md:h-9 md:w-9" />
 
-      <div className="min-w-0 max-w-2xl flex-1">
+      <div className="order-3 w-full min-w-0 max-w-2xl flex-1 md:order-none md:w-auto">
         <Input
           type="search"
           placeholder="Search..."
@@ -30,7 +30,7 @@ export const TopHeader = ({ onSearch }: TopHeaderProps) => {
         />
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 md:gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 md:gap-2">
         <Button
           variant="ghost"
           size="icon"
