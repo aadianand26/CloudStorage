@@ -18,7 +18,7 @@ export const TopHeader = ({ onSearch }: TopHeaderProps) => {
 
   return (
     <header className="border-b border-border bg-background px-3 py-2 md:h-16 md:px-6 md:py-0">
-      <div className="grid w-full grid-cols-[auto,1fr,auto] items-center gap-2 md:grid-cols-[auto,1fr,auto]">
+      <div className="flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-4">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="shrink-0" />
           <BrandLogo
@@ -28,16 +28,16 @@ export const TopHeader = ({ onSearch }: TopHeaderProps) => {
           />
         </div>
 
-        <div className="order-3 col-span-3 w-full min-w-0 md:order-none md:col-span-1 md:mx-6">
+        <div className="order-3 w-full min-w-0 md:order-none md:flex-1 md:px-2">
           <Input
             type="search"
             placeholder="Search..."
-            className="w-full text-sm md:text-base"
+            className="w-full text-sm md:max-w-[640px] md:text-base"
             onChange={handleSearchChange}
           />
         </div>
 
-        <div className="flex items-center justify-end gap-1 md:gap-2">
+        <div className="ml-auto flex items-center gap-1 md:ml-0 md:gap-2">
           <Button
             variant="ghost"
             size="icon"
