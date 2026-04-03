@@ -11,9 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspaceFiles } from "@/hooks/useWorkspaceFiles";
 import { useWorkspaceProfile } from "@/hooks/useWorkspaceProfile";
+import { useAuth } from "@/hooks/useAuth";
+import { hasSupabaseConfig, supabase } from "@/integrations/supabase/client";
 import {
   BellRing,
   Briefcase,
+  KeyRound,
   Palette,
   Settings as SettingsIcon,
   Sparkles,
@@ -28,9 +31,16 @@ const Settings = () => {
     role: "",
     plan: "",
   });
+  const [accountState, setAccountState] = useState({
+    displayName: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [accountSaving, setAccountSaving] = useState(false);
   const { toast } = useToast();
   const { activeFiles, totalSizeLabel } = useWorkspaceFiles();
   const { profile, saving, updateProfile } = useWorkspaceProfile();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!profile) return;
@@ -41,6 +51,13 @@ const Settings = () => {
       plan: profile.plan ?? "Pro",
     });
   }, [profile]);
+
+  useEffect(() => {
+    setAccountState((current) => ({
+      ...current,
+      displayName: profile?.display_name ?? user?.user_metadata?.display_name ?? "",
+    }));
+  }, [profile?.display_name, user?.user_metadata?.display_name]);
 
   const saveProfile = async () => {
     try {
@@ -102,6 +119,101 @@ const Settings = () => {
         description: "Could not save that preference.",
         variant: "destructive",
       });
+    }
+  };
+
+  const updateAccountProfile = async () => {
+    if (!hasSupabaseConfig) {
+      toast({
+        title: "Supabase not configured",
+        description: "Please configure environment variables and redeploy to update your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAccountSaving(true);
+    try {
+      const displayName = accountState.displayName.trim();
+      if (!displayName) {
+        toast({
+          title: "Display name required",
+          description: "Please enter a display name before saving.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await supabase.auth.updateUser({
+        data: {
+          display_name: displayName,
+        },
+      });
+      await updateProfile({ display_name: displayName });
+      toast({
+        title: "Profile updated",
+        description: "Your display name has been updated.",
+      });
+    } catch (error) {
+      console.error("Failed to update account profile:", error);
+      toast({
+        title: "Update failed",
+        description: "Could not update your profile details.",
+        variant: "destructive",
+      });
+    } finally {
+      setAccountSaving(false);
+    }
+  };
+
+  const updatePassword = async () => {
+    if (!hasSupabaseConfig) {
+      toast({
+        title: "Supabase not configured",
+        description: "Please configure environment variables and redeploy to change your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newPassword = accountState.newPassword.trim();
+    const confirmPassword = accountState.confirmPassword.trim();
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Weak password",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Please make sure both password fields match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAccountSaving(true);
+    try {
+      await supabase.auth.updateUser({ password: newPassword });
+      setAccountState((current) => ({ ...current, newPassword: "", confirmPassword: "" }));
+      toast({
+        title: "Password updated",
+        description: "Your password has been changed successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to update password:", error);
+      toast({
+        title: "Password update failed",
+        description: "Could not change your password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAccountSaving(false);
     }
   };
 
@@ -216,54 +328,130 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              <Card className="glass-card border-0">
-                <CardHeader>
-                  <CardTitle>Experience Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Compact dashboard widgets</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Use denser card layouts for busy workspaces.
-                      </p>
+              <div className="space-y-6">
+                <Card className="glass-card border-0">
+                  <CardHeader>
+                    <CardTitle>Experience Preferences</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Compact dashboard widgets</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Use denser card layouts for busy workspaces.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={profile?.compact_dashboard ?? false}
+                        disabled={saving}
+                        onCheckedChange={(value) => void togglePreference("compact_dashboard", value)}
+                      />
                     </div>
-                    <Switch
-                      checked={profile?.compact_dashboard ?? false}
-                      disabled={saving}
-                      onCheckedChange={(value) => void togglePreference("compact_dashboard", value)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Show upload suggestions</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Recommend folders and tags when new files are added.
-                      </p>
+                    <Separator />
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Show upload suggestions</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Recommend folders and tags when new files are added.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={profile?.upload_suggestions ?? true}
+                        disabled={saving}
+                        onCheckedChange={(value) => void togglePreference("upload_suggestions", value)}
+                      />
                     </div>
-                    <Switch
-                      checked={profile?.upload_suggestions ?? true}
-                      disabled={saving}
-                      onCheckedChange={(value) => void togglePreference("upload_suggestions", value)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Weekly digest</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Receive a summary of storage and account activity.
-                      </p>
+                    <Separator />
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Weekly digest</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Receive a summary of storage and account activity.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={profile?.weekly_digest ?? true}
+                        disabled={saving}
+                        onCheckedChange={(value) => void togglePreference("weekly_digest", value)}
+                      />
                     </div>
-                    <Switch
-                      checked={profile?.weekly_digest ?? true}
-                      disabled={saving}
-                      onCheckedChange={(value) => void togglePreference("weekly_digest", value)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-card border-0">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <KeyRound className="h-5 w-5 text-primary" />
+                      Account & Security
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="account-email">Email</Label>
+                      <Input
+                        id="account-email"
+                        value={user?.email ?? "Not available"}
+                        readOnly
+                        className="bg-white/60"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="account-display-name">Display name</Label>
+                      <Input
+                        id="account-display-name"
+                        value={accountState.displayName}
+                        onChange={(event) =>
+                          setAccountState((current) => ({ ...current, displayName: event.target.value }))
+                        }
+                        className="bg-white/80"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => void updateAccountProfile()}
+                      disabled={accountSaving || saving}
+                      variant="outline"
+                      className="w-full bg-white/80"
+                    >
+                      Update Profile
+                    </Button>
+
+                    <Separator />
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">New password</Label>
+                        <Input
+                          id="new-password"
+                          type="password"
+                          value={accountState.newPassword}
+                          onChange={(event) =>
+                            setAccountState((current) => ({ ...current, newPassword: event.target.value }))
+                          }
+                          className="bg-white/80"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm password</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          value={accountState.confirmPassword}
+                          onChange={(event) =>
+                            setAccountState((current) => ({ ...current, confirmPassword: event.target.value }))
+                          }
+                          className="bg-white/80"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={() => void updatePassword()} disabled={accountSaving} className="w-full">
+                      Change Password
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Changing your password will keep you signed in on this device.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             <Card className="glass-card border-0">
