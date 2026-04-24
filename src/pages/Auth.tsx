@@ -24,8 +24,10 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const [error, setError] = useState('');
-  const { signIn, signUp, user } = useAuth();
+  const [confirmationEmail, setConfirmationEmail] = useState('');
+  const { signIn, signUp, resendSignUpConfirmation, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -70,11 +72,34 @@ const Auth = () => {
       } else if (!isSignUp) {
         // Sign in successful, redirect handled by auth state change
         navigate('/', { replace: true });
+      } else if (result.emailConfirmationSent) {
+        setConfirmationEmail(email);
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    const emailToConfirm = confirmationEmail || email;
+
+    if (!emailToConfirm) return;
+
+    setResendingConfirmation(true);
+    setError('');
+
+    try {
+      const result = await resendSignUpConfirmation(emailToConfirm);
+
+      if (result.error) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setResendingConfirmation(false);
     }
   };
 
@@ -99,6 +124,7 @@ const Auth = () => {
             <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(value) => {
               setIsSignUp(value === "signup");
               setError('');
+              setConfirmationEmail('');
             }}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -177,6 +203,26 @@ const Auth = () => {
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {confirmationEmail && !error && (
+                <Alert>
+                  <AlertDescription className="space-y-3">
+                    <p>
+                      We sent a confirmation link to <span className="font-medium">{confirmationEmail}</span>.
+                      Check your inbox and spam folder before signing in.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendConfirmation}
+                      disabled={resendingConfirmation}
+                    >
+                      {resendingConfirmation ? 'Sending...' : 'Resend confirmation email'}
+                    </Button>
+                  </AlertDescription>
                 </Alert>
               )}
 

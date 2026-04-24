@@ -8,7 +8,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null; emailConfirmationSent?: boolean }>;
+  resendSignUpConfirmation: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -27,6 +28,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  const getEmailRedirectUrl = () => {
+    const configuredRedirectUrl = import.meta.env.VITE_AUTH_EMAIL_REDIRECT_URL as string | undefined;
+
+    if (configuredRedirectUrl?.trim()) {
+      return configuredRedirectUrl.trim();
+    }
+
+    return `${window.location.origin}/`;
+  };
 
   useEffect(() => {
     if (!hasSupabaseConfig) {
@@ -100,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!hasSupabaseConfig) {
         return { error: 'Supabase is not configured. Please set the environment variables and redeploy.' };
       }
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = getEmailRedirectUrl();
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -112,11 +123,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
+        console.error('Supabase sign up error:', error);
         let friendlyMessage = 'Sign up failed. Please try again.';
         if (error.message.includes('User already registered')) {
           friendlyMessage = 'An account with this email already exists. Please sign in instead.';
         } else if (error.message.includes('Password should be at least')) {
           friendlyMessage = 'Password should be at least 6 characters long.';
+        } else if (error.message.toLowerCase().includes('redirect')) {
+          friendlyMessage = 'The confirmation link redirect URL is not allowed in Supabase. Check your auth URL settings.';
         }
         return { error: friendlyMessage };
       }
@@ -124,6 +138,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({
         title: "Account created!",
         description: "Please check your email to confirm your account.",
+      });
+
+      return { error: null, emailConfirmationSent: true };
+    } catch (error) {
+      return { error: 'An unexpected error occurred. Please try again.' };
+    }
+  };
+
+  const resendSignUpConfirmation = async (email: string) => {
+    try {
+      if (!hasSupabaseConfig) {
+        return { error: 'Supabase is not configured. Please set the environment variables and redeploy.' };
+      }
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: getEmailRedirectUrl(),
+        },
+      });
+
+      if (error) {
+        console.error('Supabase confirmation resend error:', error);
+        return { error: 'Could not resend the confirmation email. Please wait a moment and try again.' };
+      }
+
+      toast({
+        title: "Confirmation email sent",
+        description: "Please check your inbox and spam folder.",
       });
 
       return { error: null };
@@ -157,6 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loading,
     signIn,
     signUp,
+    resendSignUpConfirmation,
     signOut,
   };
 
