@@ -274,7 +274,7 @@ const AiAssistant = () => {
               ))}
             </div>
 
-            {response ? (
+            {response && (
               <Card className="glass-card border-0">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -284,35 +284,6 @@ const AiAssistant = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{response}</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="glass-card border-0 border-2 border-yellow-200/50 bg-yellow-50/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-yellow-900">
-                    <Lightbulb className="h-5 w-5" />
-                    Setup Required
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-yellow-800">
-                    The AI Assistant requires API credentials to work. Please follow these steps:
-                  </p>
-                  <ol className="space-y-2 text-sm text-yellow-800 list-decimal list-inside">
-                    <li>Sign up for an AI service (Google Generative AI, Together AI, or Anthropic Claude)</li>
-                    <li>Get your API key from the service</li>
-                    <li>Go to your Supabase project → Edge Functions → Secrets</li>
-                    <li>Add two secrets:
-                      <ul className="ml-4 mt-1 space-y-1 list-disc list-inside">
-                        <li><code className="bg-yellow-100 px-2 py-0.5 rounded text-xs">AI_GATEWAY_API_KEY</code></li>
-                        <li><code className="bg-yellow-100 px-2 py-0.5 rounded text-xs">AI_GATEWAY_URL</code></li>
-                      </ul>
-                    </li>
-                    <li>Refresh this page and try again</li>
-                  </ol>
-                  <p className="text-xs text-yellow-700 mt-4">
-                    See <code className="bg-yellow-100 px-2 py-1 rounded">AI_SETUP_GUIDE.md</code> in the project root for detailed instructions.
-                  </p>
                 </CardContent>
               </Card>
             )}
