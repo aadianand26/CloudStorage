@@ -138,9 +138,6 @@ export const Landing = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-3">
-              Watch Demo
-            </Button>
           </div>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground sm:gap-6 sm:text-base">
             <div className="flex items-center gap-2">
