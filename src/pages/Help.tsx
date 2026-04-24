@@ -36,8 +36,8 @@ const Help = () => {
   return (
     <ProtectedRoute>
       <DashboardLayout onSearch={setSearchTerm}>
-        <section className="px-3 pb-8 pt-4 md:px-6 md:pb-12 md:pt-6">
-          <div className="mx-auto max-w-7xl space-y-6">
+        <section className="page-shell">
+          <div className="page-container">
             <Card className="glass-card overflow-hidden border-0">
               <CardContent className="p-6 md:p-8">
                 <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">

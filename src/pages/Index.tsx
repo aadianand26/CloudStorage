@@ -15,8 +15,8 @@ const Index = () => {
   return (
     <ProtectedRoute>
       <DashboardLayout onSearch={setSearchTerm}>
-        <section className="px-3 md:px-6 pt-4 md:pt-6 pb-8 md:pb-12">
-          <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+        <section className="page-shell">
+          <div className="page-container">
             {/* File Upload Zone */}
             <FileUpload />
 

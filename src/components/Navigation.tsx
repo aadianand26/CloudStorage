@@ -77,13 +77,13 @@ export const Navigation = ({ onSearch, onTabChange, activeTab = 'all' }: Navigat
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6">
+        <div className="flex min-h-16 flex-wrap items-center justify-between gap-2 py-2">
           {/* Logo */}
           <BrandLogo text="Clever Vault" />
 
           {/* Navigation Items */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -93,7 +93,7 @@ export const Navigation = ({ onSearch, onTabChange, activeTab = 'all' }: Navigat
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
                   onClick={() => navigate(item.path)}
-                  className="flex items-center space-x-2"
+                  className="flex items-center gap-2"
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
@@ -103,14 +103,14 @@ export const Navigation = ({ onSearch, onTabChange, activeTab = 'all' }: Navigat
           </div>
 
           {/* Search and User Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Search */}
             {(location.pathname === '/' || 
               location.pathname === '/documents' || 
               location.pathname === '/images' || 
               location.pathname === '/videos' || 
               location.pathname === '/archives') && (
-              <div className="hidden lg:block relative w-64">
+              <div className="relative hidden w-64 lg:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
@@ -129,7 +129,7 @@ export const Navigation = ({ onSearch, onTabChange, activeTab = 'all' }: Navigat
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-[min(14rem,calc(100vw-1rem))]">
                 <DropdownMenuLabel>Settings</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
@@ -151,7 +151,7 @@ export const Navigation = ({ onSearch, onTabChange, activeTab = 'all' }: Navigat
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-[min(16rem,calc(100vw-1rem))]">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium">My Account</p>

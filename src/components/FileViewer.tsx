@@ -55,7 +55,6 @@ export const FileViewer = ({ file, open, onClose, onDownload, onShare }: FileVie
         return;
       }
 
-      console.log('Loading file (download mode):', file.name, 'Path:', file.storage_path);
       setLoading(true);
       try {
         // Try direct download first; fallback to signed URL fetch to avoid CORS/storage policy edge cases
@@ -92,7 +91,6 @@ export const FileViewer = ({ file, open, onClose, onDownload, onShare }: FileVie
         }
 
         createdUrl = URL.createObjectURL(blob);
-        console.log('Object URL ready for preview');
         if (currentUrlRef.current && currentUrlRef.current !== createdUrl) {
           URL.revokeObjectURL(currentUrlRef.current);
         }
@@ -206,7 +204,7 @@ export const FileViewer = ({ file, open, onClose, onDownload, onShare }: FileVie
 
     if (effectiveType.startsWith('text/') || ['application/json','application/xml','text/csv','application/csv'].includes(effectiveType)) {
       return (
-        <div className="w-full max-w-5xl h-full bg-background rounded-lg p-8 overflow-auto">
+        <div className="h-full w-full max-w-5xl overflow-auto rounded-lg bg-background p-4 md:p-8">
           {textContent ? (
             <pre className="whitespace-pre-wrap text-sm font-mono">{textContent}</pre>
           ) : (
@@ -234,8 +232,9 @@ export const FileViewer = ({ file, open, onClose, onDownload, onShare }: FileVie
   return (
     <div className="fixed inset-0 z-50 bg-background">
       {/* Top toolbar */}
-      <div className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+      <div className="min-h-16 border-b bg-background/95 px-2 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -245,17 +244,18 @@ export const FileViewer = ({ file, open, onClose, onDownload, onShare }: FileVie
             <X className="h-5 w-5" />
           </Button>
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold truncate">{file.name}</h2>
+            <h2 className="truncate font-semibold">{file.name}</h2>
             <p className="text-sm text-muted-foreground">
               {file.type} • {(file.size / 1024).toFixed(2)} KB
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:items-center">
           <Button
             variant="ghost"
             size="sm"
             onClick={onShare}
+            className="w-full sm:w-auto"
           >
             <Share2 className="h-4 w-4 mr-2" />
             Share
@@ -265,23 +265,27 @@ export const FileViewer = ({ file, open, onClose, onDownload, onShare }: FileVie
             size="sm"
             onClick={() => { const url = signedUrl || fileUrl; if (url) window.open(url, '_blank', 'noopener,noreferrer'); }}
             disabled={!fileUrl && !signedUrl}
+            className="w-full sm:w-auto"
           >
-            Open in new tab
+            <span className="hidden sm:inline">Open in new tab</span>
+            <span className="sm:hidden">Open</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={onDownload}
+            className="w-full sm:w-auto"
           >
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
         </div>
+        </div>
       </div>
 
       {/* Preview area */}
-      <div className="h-[calc(100vh-4rem)] overflow-auto bg-muted/20">
-        <div className="h-full flex items-center justify-center p-4">
+      <div className="h-[calc(100svh-7.5rem)] overflow-auto bg-muted/20 sm:h-[calc(100svh-4rem)]">
+        <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
           {renderPreview()}
         </div>
       </div>

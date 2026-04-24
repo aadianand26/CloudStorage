@@ -137,6 +137,98 @@ export type Database = {
         }
         Relationships: []
       }
+      login_activity: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_id: string | null
+          device_name: string
+          event_type: string
+          id: string
+          location: string | null
+          os: string | null
+          status: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_id?: string | null
+          device_name: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          os?: string | null
+          status?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_id?: string | null
+          device_name?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          os?: string | null
+          status?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_activity_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "user_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_devices: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_fingerprint: string
+          device_name: string
+          first_seen_at: string
+          id: string
+          last_active_at: string
+          os: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_fingerprint: string
+          device_name: string
+          first_seen_at?: string
+          id?: string
+          last_active_at?: string
+          os?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string
+          first_seen_at?: string
+          id?: string
+          last_active_at?: string
+          os?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

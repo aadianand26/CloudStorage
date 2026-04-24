@@ -1,164 +1,216 @@
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import {
+  AccountInformationSection,
+  ActivityHistorySection,
+  AppearanceSettingsSection,
+  ConnectedDevicesSection,
+  HelpSupportSection,
+  NotificationSettingsSection,
+  SecurityPrivacySection,
+  SettingsCategorySidebar,
+  SharingSettingsSection,
+  StorageManagementSection,
+  UploadPreferencesSection,
+  type ActivityInfo,
+  type SessionInfo,
+  type SettingSectionId,
+  type SettingsState,
+  type StorageBreakdownItem,
+} from "@/components/settings/SettingsPageSections";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useDeviceActivity } from "@/hooks/useDeviceActivity";
+import { useStorageStats } from "@/hooks/useStorageStats";
 import { useWorkspaceFiles } from "@/hooks/useWorkspaceFiles";
 import { useWorkspaceProfile } from "@/hooks/useWorkspaceProfile";
-import { useAuth } from "@/hooks/useAuth";
+import { formatBytes, isDocumentFile, isImageFile, isVideoFile } from "@/lib/file-utils";
 import { hasSupabaseConfig, supabase } from "@/integrations/supabase/client";
-import {
-  BellRing,
-  Briefcase,
-  KeyRound,
-  Palette,
-  Settings as SettingsIcon,
-  Sparkles,
-  UserCircle2,
-} from "lucide-react";
+import { Cloud, Save } from "lucide-react";
+
+const SETTINGS_STORAGE_KEY = "clever-vault-settings";
+const PROFILE_IMAGE_KEY = "clever-vault-profile-picture";
+
+const formatDateTime = (value?: string | null) => (value ? new Date(value).toLocaleString() : "Not available");
+
+const formatRelativeTime = (value?: string | null) => {
+  if (!value) return "not available";
+
+  const diffMs = Date.now() - new Date(value).getTime();
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes} min ago`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} hr ago`;
+
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+
+  return new Date(value).toLocaleDateString();
+};
+
+const defaultSettings: SettingsState = {
+  profileName: "",
+  email: "",
+  defaultSharingPermission: "viewer",
+  publicLinkSharing: true,
+  passwordProtectedSharing: true,
+  linkExpirationDefault: "30",
+  autoSync: true,
+  resumeUploads: true,
+  overwriteConfirmation: true,
+  defaultUploadFolder: "my-files",
+  trashRetentionDays: "30",
+  uploadSuccessAlerts: true,
+  fileSharedAlerts: true,
+  storageAlmostFullAlert: true,
+  loginAlerts: true,
+  weeklySummaryEmail: true,
+  twoFactorEnabled: true,
+  darkMode: false,
+  fontSize: "medium",
+  language: "en",
+};
 
 const Settings = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [formState, setFormState] = useState({
-    display_name: "",
-    workspace_name: "",
-    role: "",
-    plan: "",
-  });
-  const [accountState, setAccountState] = useState({
-    displayName: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const [, setSearchTerm] = useState("");
+  const [activeSection, setActiveSection] = useState<SettingSectionId>("account");
+  const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [accountSaving, setAccountSaving] = useState(false);
   const { toast } = useToast();
-  const { activeFiles, totalSizeLabel } = useWorkspaceFiles();
-  const { profile, saving, updateProfile } = useWorkspaceProfile();
   const { user } = useAuth();
+  const {
+    devices,
+    loginActivity,
+    currentDeviceId,
+    removeDevice,
+    removeOtherDevices,
+  } = useDeviceActivity();
+  const { activeFiles, sharedFiles, deletedFiles } = useWorkspaceFiles();
+  const { profile, saving, updateProfile } = useWorkspaceProfile();
+  const { totalSize, storageLimit, percentage, usedFormatted, limitFormatted } = useStorageStats();
 
   useEffect(() => {
-    if (!profile) return;
-    setFormState({
-      display_name: profile.display_name ?? "",
-      workspace_name: profile.workspace_name ?? "Clever Vault",
-      role: profile.role ?? "Owner",
-      plan: profile.plan ?? "Pro",
-    });
-  }, [profile]);
+    const savedSettings = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const savedPicture = window.localStorage.getItem(PROFILE_IMAGE_KEY);
+
+    if (savedSettings) {
+      try {
+        setSettings((current) => ({
+          ...current,
+          ...JSON.parse(savedSettings),
+        }));
+      } catch {
+        window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      }
+    }
+
+    if (savedPicture) {
+      setProfilePicture(savedPicture);
+    }
+  }, []);
 
   useEffect(() => {
-    setAccountState((current) => ({
+    setSettings((current) => ({
       ...current,
-      displayName: profile?.display_name ?? user?.user_metadata?.display_name ?? "",
+      profileName: current.profileName || profile?.display_name || user?.user_metadata?.display_name || "",
+      email: current.email || user?.email || "",
+      twoFactorEnabled: profile?.two_factor_enabled ?? current.twoFactorEnabled,
+      passwordProtectedSharing: profile?.protected_share_links ?? current.passwordProtectedSharing,
+      weeklySummaryEmail: profile?.weekly_digest ?? current.weeklySummaryEmail,
     }));
-  }, [profile?.display_name, user?.user_metadata?.display_name]);
+  }, [
+    profile?.display_name,
+    profile?.protected_share_links,
+    profile?.two_factor_enabled,
+    profile?.weekly_digest,
+    user?.email,
+    user?.user_metadata?.display_name,
+  ]);
 
-  const saveProfile = async () => {
-    try {
-      await updateProfile({
-        display_name: formState.display_name,
-        workspace_name: formState.workspace_name,
-        role: formState.role,
-        plan: formState.plan,
-      });
-      toast({
-        title: "Settings saved",
-        description: "Your workspace details were updated successfully.",
-      });
-    } catch (error) {
-      console.error("Failed to save settings:", error);
-      toast({
-        title: "Save failed",
-        description: "Could not save your workspace settings.",
-        variant: "destructive",
-      });
+  useEffect(() => {
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    document.documentElement.classList.toggle("dark", settings.darkMode);
+    document.documentElement.style.fontSize =
+      settings.fontSize === "large" ? "17px" : settings.fontSize === "small" ? "15px" : "16px";
+  }, [settings]);
+
+  const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+    setSettings((current) => ({ ...current, [key]: value }));
+
+    if (key === "twoFactorEnabled") {
+      void updateProfile({ two_factor_enabled: Boolean(value) }).catch(() => showSaveError());
+    }
+
+    if (key === "passwordProtectedSharing") {
+      void updateProfile({ protected_share_links: Boolean(value) }).catch(() => showSaveError());
+    }
+
+    if (key === "weeklySummaryEmail") {
+      void updateProfile({ weekly_digest: Boolean(value) }).catch(() => showSaveError());
     }
   };
 
-  const resetLayout = async () => {
-    try {
-      await updateProfile({
-        compact_dashboard: false,
-        upload_suggestions: true,
-        weekly_digest: true,
-      });
-      toast({
-        title: "Defaults restored",
-        description: "Layout-related workspace settings were reset.",
-      });
-    } catch (error) {
-      console.error("Failed to reset layout:", error);
-      toast({
-        title: "Reset failed",
-        description: "Could not restore the default preferences.",
-        variant: "destructive",
-      });
-    }
+  const showSaveError = () => {
+    toast({
+      title: "Cloud save failed",
+      description: "The local setting was saved, but the cloud profile update did not complete.",
+      variant: "destructive",
+    });
   };
 
-  const togglePreference = async (
-    field: "compact_dashboard" | "upload_suggestions" | "weekly_digest",
-    value: boolean,
-  ) => {
-    try {
-      await updateProfile({ [field]: value });
-      toast({
-        title: "Preference updated",
-        description: "Your experience setting has been saved.",
-      });
-    } catch (error) {
-      console.error("Failed to update preference:", error);
-      toast({
-        title: "Update failed",
-        description: "Could not save that preference.",
-        variant: "destructive",
-      });
-    }
+  const handleSectionSelect = (id: SettingSectionId) => {
+    setActiveSection(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const updateAccountProfile = async () => {
-    if (!hasSupabaseConfig) {
-      toast({
-        title: "Supabase not configured",
-        description: "Please configure environment variables and redeploy to update your profile.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleProfilePictureChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = String(reader.result);
+      setProfilePicture(image);
+      window.localStorage.setItem(PROFILE_IMAGE_KEY, image);
+      toast({ title: "Profile picture saved", description: "Your profile image was saved locally." });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    window.localStorage.removeItem(PROFILE_IMAGE_KEY);
+    toast({ title: "Profile picture removed", description: "The local profile image was cleared." });
+  };
+
+  const updateAccountDetails = async () => {
     setAccountSaving(true);
     try {
-      const displayName = accountState.displayName.trim();
-      if (!displayName) {
-        toast({
-          title: "Display name required",
-          description: "Please enter a display name before saving.",
-          variant: "destructive",
-        });
-        return;
+      if (settings.profileName.trim()) {
+        await updateProfile({ display_name: settings.profileName.trim() });
       }
 
-      await supabase.auth.updateUser({
-        data: {
-          display_name: displayName,
-        },
-      });
-      await updateProfile({ display_name: displayName });
+      if (hasSupabaseConfig && user && settings.email.trim() && settings.email.trim() !== user.email) {
+        await supabase.auth.updateUser({ email: settings.email.trim() });
+      }
+
       toast({
-        title: "Profile updated",
-        description: "Your display name has been updated.",
+        title: "Account updated",
+        description: "Your account information has been saved.",
       });
     } catch (error) {
-      console.error("Failed to update account profile:", error);
+      console.error("Failed to update account:", error);
       toast({
-        title: "Update failed",
-        description: "Could not update your profile details.",
+        title: "Account update failed",
+        description: "Could not save those account details.",
         variant: "destructive",
       });
     } finally {
@@ -166,328 +218,243 @@ const Settings = () => {
     }
   };
 
-  const updatePassword = async () => {
-    if (!hasSupabaseConfig) {
-      toast({
-        title: "Supabase not configured",
-        description: "Please configure environment variables and redeploy to change your password.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleChangePassword = () => {
+    toast({
+      title: "Password change",
+      description: "Use the account recovery flow or connect a dedicated password form for production updates.",
+    });
+  };
 
-    const newPassword = accountState.newPassword.trim();
-    const confirmPassword = accountState.confirmPassword.trim();
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Weak password",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Passwords do not match",
-        description: "Please make sure both password fields match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAccountSaving(true);
+  const logoutAllDevices = async () => {
     try {
-      await supabase.auth.updateUser({ password: newPassword });
-      setAccountState((current) => ({ ...current, newPassword: "", confirmPassword: "" }));
+      await supabase.auth.signOut({ scope: "global" });
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully.",
+        title: "Logged out everywhere",
+        description: "All sessions were signed out successfully.",
       });
     } catch (error) {
-      console.error("Failed to update password:", error);
+      console.error("Failed to logout from all devices:", error);
       toast({
-        title: "Password update failed",
-        description: "Could not change your password. Please try again.",
+        title: "Logout failed",
+        description: "Could not log out all devices right now.",
         variant: "destructive",
       });
-    } finally {
-      setAccountSaving(false);
     }
   };
+
+  const logoutOtherDevices = async () => {
+    try {
+      await removeOtherDevices();
+      toast({
+        title: "Other devices removed",
+        description: "Other tracked devices were removed from your backend device list.",
+      });
+    } catch (error) {
+      console.error("Failed to remove other devices:", error);
+      toast({
+        title: "Device update failed",
+        description: "Could not remove other devices right now.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteAccount = () => {
+    toast({
+      title: "Delete account requested",
+      description: "Connect a backend delete endpoint to permanently remove the user account and files.",
+      variant: "destructive",
+    });
+  };
+
+  const storageBreakdown = useMemo<StorageBreakdownItem[]>(() => {
+    const images = activeFiles.filter((file) => isImageFile(file.type)).reduce((sum, file) => sum + file.size, 0);
+    const videos = activeFiles.filter((file) => isVideoFile(file.type)).reduce((sum, file) => sum + file.size, 0);
+    const documents = activeFiles.filter((file) => isDocumentFile(file.type)).reduce((sum, file) => sum + file.size, 0);
+    const knownTotal = images + videos + documents;
+    const others = Math.max(totalSize - knownTotal, 0);
+    const percentOfTotal = (value: number) => (totalSize > 0 ? Math.round((value / totalSize) * 100) : 0);
+
+    return [
+      { label: "Images", bytes: images, percent: percentOfTotal(images), tone: "bg-emerald-500" },
+      { label: "Videos", bytes: videos, percent: percentOfTotal(videos), tone: "bg-sky-500" },
+      { label: "Documents", bytes: documents, percent: percentOfTotal(documents), tone: "bg-amber-500" },
+      { label: "Others", bytes: others, percent: percentOfTotal(others), tone: "bg-stone-500" },
+    ];
+  }, [activeFiles, totalSize]);
+
+  const remainingStorage = Math.max(storageLimit - totalSize, 0);
+
+  const connectedDevices = useMemo(
+    () =>
+      devices.map((device) => ({
+        id: device.id,
+        name: device.device_name,
+        lastActive: formatRelativeTime(device.last_active_at),
+      })),
+    [devices],
+  );
+
+  const sessions = useMemo<SessionInfo[]>(
+    () =>
+      devices.map((device) => ({
+        id: device.id,
+        name: device.device_name,
+        location: [device.os, device.browser].filter(Boolean).join(" - ") || "Tracked device",
+        lastActive: formatRelativeTime(device.last_active_at),
+        current: device.id === currentDeviceId,
+      })),
+    [currentDeviceId, devices],
+  );
+
+  const activities = useMemo<ActivityInfo[]>(() => {
+    const fileActivities = activeFiles.slice(0, 4).map((file, index) => ({
+      id: `upload-${file.id}`,
+      action: "File upload",
+      detail: file.name,
+      timestamp: formatDateTime(file.created_at),
+      device: sessions[0]?.name ?? (index % 2 === 0 ? "Web browser" : "Desktop sync"),
+      status: "Completed",
+    }));
+
+    const deletedActivities = deletedFiles.slice(0, 2).map((file) => ({
+      id: `delete-${file.id}`,
+      action: "File delete",
+      detail: file.name,
+      timestamp: formatDateTime(file.deleted_at ?? file.updated_at),
+      device: sessions[0]?.name ?? "Web browser",
+      status: "Completed",
+    }));
+
+    const sharedActivities = sharedFiles.slice(0, 2).map((file) => ({
+      id: `share-${file.id}`,
+      action: "File share",
+      detail: file.name,
+      timestamp: formatDateTime(file.updated_at),
+      device: sessions[0]?.name ?? "Web browser",
+      status: "Completed",
+    }));
+
+    const loginActivities = loginActivity.map((activity) => ({
+      id: `login-${activity.id}`,
+      action: "Login attempt",
+      detail: `${activity.status === "successful" ? "Successful" : "Recorded"} ${activity.event_type}`,
+      timestamp: formatDateTime(activity.created_at),
+      device: activity.device_name,
+      status: activity.status === "successful" ? "Successful" : activity.status,
+    }));
+
+    return [
+      ...loginActivities,
+      ...fileActivities,
+      ...deletedActivities,
+      ...sharedActivities,
+    ].slice(0, 10);
+  }, [activeFiles, deletedFiles, loginActivity, sessions, sharedFiles]);
+
+  const accountCreatedAt = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString()
+    : profile?.created_at
+      ? new Date(profile.created_at).toLocaleDateString()
+      : "Not available";
+
+  const lastLogin = user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : "Not available";
 
   return (
     <ProtectedRoute>
       <DashboardLayout onSearch={setSearchTerm}>
-        <section className="px-3 pb-8 pt-4 md:px-6 md:pb-12 md:pt-6">
-          <div className="mx-auto max-w-7xl space-y-6">
+        <section className="page-shell">
+          <div className="page-container">
             <Card className="glass-card overflow-hidden border-0">
               <CardContent className="p-6 md:p-8">
-                <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-                  <div className="space-y-4">
-                    <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Workspace Settings</Badge>
-                    <div className="space-y-3">
-                      <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Settings</h1>
-                      <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
-                        Shape the workspace around your team, your brand, and the way you actually
-                        review, upload, and share files every day.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={() => void saveProfile()} disabled={saving}>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Save Preferences
-                      </Button>
-                      <Button variant="outline" className="bg-white/70" onClick={() => void resetLayout()} disabled={saving}>
-                        Reset Layout
-                      </Button>
-                    </div>
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-3xl space-y-3">
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Cloud Storage Settings</Badge>
+                    <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Settings</h1>
+                    <p className="text-sm leading-6 text-muted-foreground md:text-base">
+                      A complete dashboard control center for account details, storage, security, sharing, uploads,
+                      notifications, devices, appearance, activity, and support.
+                    </p>
                   </div>
-
-                  <div className="rounded-3xl border border-border/80 bg-white/80 p-5 shadow-sm">
-                    <div className="mb-4 flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <SettingsIcon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">Profile Snapshot</p>
-                        <p className="text-xs text-muted-foreground">Live details from your connected profile</p>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-border/80 bg-background/80 p-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Plan</p>
-                        <p className="mt-2 text-lg font-semibold text-foreground">{profile?.plan ?? "Pro"}</p>
-                      </div>
-                      <div className="rounded-2xl border border-border/80 bg-background/80 p-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Workspace</p>
-                        <p className="mt-2 text-lg font-semibold text-foreground">
-                          {profile?.workspace_name ?? "Clever Vault"}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-border/80 bg-background/80 p-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Storage</p>
-                        <p className="mt-2 text-lg font-semibold text-foreground">{totalSizeLabel}</p>
-                      </div>
-                      <div className="rounded-2xl border border-border/80 bg-background/80 p-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Files</p>
-                        <p className="mt-2 text-lg font-semibold text-foreground">{activeFiles.length}</p>
-                      </div>
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" className="bg-white/80" disabled={saving || accountSaving}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Auto-save on
+                    </Button>
+                    <Button onClick={() => toast({ title: "Upgrade plan", description: "Mock upgrade flow opened." })}>
+                      <Cloud className="mr-2 h-4 w-4" />
+                      Upgrade
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-              <Card className="glass-card border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCircle2 className="h-5 w-5 text-primary" />
-                    Profile & Workspace
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="full-name">Full name</Label>
-                    <Input
-                      id="full-name"
-                      value={formState.display_name}
-                      onChange={(event) => setFormState((current) => ({ ...current, display_name: event.target.value }))}
-                      className="bg-white/80"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="workspace-name">Workspace name</Label>
-                    <Input
-                      id="workspace-name"
-                      value={formState.workspace_name}
-                      onChange={(event) => setFormState((current) => ({ ...current, workspace_name: event.target.value }))}
-                      className="bg-white/80"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Input
-                      id="role"
-                      value={formState.role}
-                      onChange={(event) => setFormState((current) => ({ ...current, role: event.target.value }))}
-                      className="bg-white/80"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="plan">Plan</Label>
-                    <Input
-                      id="plan"
-                      value={formState.plan}
-                      onChange={(event) => setFormState((current) => ({ ...current, plan: event.target.value }))}
-                      className="bg-white/80"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid gap-6 lg:grid-cols-[17rem_1fr]">
+              <SettingsCategorySidebar activeSection={activeSection} onSelect={handleSectionSelect} />
 
               <div className="space-y-6">
-                <Card className="glass-card border-0">
-                  <CardHeader>
-                    <CardTitle>Experience Preferences</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">Compact dashboard widgets</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Use denser card layouts for busy workspaces.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={profile?.compact_dashboard ?? false}
-                        disabled={saving}
-                        onCheckedChange={(value) => void togglePreference("compact_dashboard", value)}
-                      />
-                    </div>
-                    <Separator />
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">Show upload suggestions</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Recommend folders and tags when new files are added.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={profile?.upload_suggestions ?? true}
-                        disabled={saving}
-                        onCheckedChange={(value) => void togglePreference("upload_suggestions", value)}
-                      />
-                    </div>
-                    <Separator />
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">Weekly digest</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Receive a summary of storage and account activity.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={profile?.weekly_digest ?? true}
-                        disabled={saving}
-                        onCheckedChange={(value) => void togglePreference("weekly_digest", value)}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                <AccountInformationSection
+                  settings={settings}
+                  profilePicture={profilePicture}
+                  createdAt={accountCreatedAt}
+                  lastLogin={lastLogin}
+                  accountSaving={accountSaving}
+                  onSettingChange={updateSetting}
+                  onProfilePictureChange={handleProfilePictureChange}
+                  onRemoveProfilePicture={removeProfilePicture}
+                  onUpdateAccount={() => void updateAccountDetails()}
+                  onChangePassword={handleChangePassword}
+                  onLogoutAllDevices={() => void logoutAllDevices()}
+                  onDeleteAccount={deleteAccount}
+                />
 
-                <Card className="glass-card border-0">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <KeyRound className="h-5 w-5 text-primary" />
-                      Account & Security
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="account-email">Email</Label>
-                      <Input
-                        id="account-email"
-                        value={user?.email ?? "Not available"}
-                        readOnly
-                        className="bg-white/60"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="account-display-name">Display name</Label>
-                      <Input
-                        id="account-display-name"
-                        value={accountState.displayName}
-                        onChange={(event) =>
-                          setAccountState((current) => ({ ...current, displayName: event.target.value }))
-                        }
-                        className="bg-white/80"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => void updateAccountProfile()}
-                      disabled={accountSaving || saving}
-                      variant="outline"
-                      className="w-full bg-white/80"
-                    >
-                      Update Profile
-                    </Button>
+                <StorageManagementSection
+                  totalCapacity={limitFormatted}
+                  usedStorage={usedFormatted}
+                  remainingStorage={formatBytes(remainingStorage)}
+                  usagePercent={percentage}
+                  breakdown={storageBreakdown}
+                  onUpgrade={() => toast({ title: "Upgrade storage plan", description: "Mock billing plan selector opened." })}
+                />
 
-                    <Separator />
+                <SecurityPrivacySection
+                  twoFactorEnabled={settings.twoFactorEnabled}
+                  sessions={sessions}
+                  loginActivity={activities.filter((activity) => activity.action === "Login attempt")}
+                  onToggleTwoFactor={(checked) => updateSetting("twoFactorEnabled", checked)}
+                  onChangePassword={handleChangePassword}
+                  onLogoutOtherDevices={logoutOtherDevices}
+                />
 
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">New password</Label>
-                        <Input
-                          id="new-password"
-                          type="password"
-                          value={accountState.newPassword}
-                          onChange={(event) =>
-                            setAccountState((current) => ({ ...current, newPassword: event.target.value }))
-                          }
-                          className="bg-white/80"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm password</Label>
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          value={accountState.confirmPassword}
-                          onChange={(event) =>
-                            setAccountState((current) => ({ ...current, confirmPassword: event.target.value }))
-                          }
-                          className="bg-white/80"
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={() => void updatePassword()} disabled={accountSaving} className="w-full">
-                      Change Password
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Changing your password will keep you signed in on this device.
-                    </p>
-                  </CardContent>
-                </Card>
+                <SharingSettingsSection settings={settings} onSettingChange={updateSetting} />
+                <UploadPreferencesSection settings={settings} onSettingChange={updateSetting} />
+                <NotificationSettingsSection settings={settings} onSettingChange={updateSetting} />
+                <ConnectedDevicesSection
+                  devices={connectedDevices}
+                  onRemoveDevice={(id) => {
+                    void removeDevice(id)
+                      .then(() => {
+                        toast({
+                          title: "Device removed",
+                          description: "The device was removed from your backend device list.",
+                        });
+                      })
+                      .catch((error) => {
+                        console.error("Failed to remove device:", error);
+                        toast({
+                          title: "Remove failed",
+                          description: "Could not remove that device right now.",
+                          variant: "destructive",
+                        });
+                      });
+                  }}
+                />
+                <AppearanceSettingsSection settings={settings} onSettingChange={updateSetting} />
+                <ActivityHistorySection activities={activities} />
+                <HelpSupportSection appVersion="Clever Vault 1.0.0" />
               </div>
             </div>
-
-            <Card className="glass-card border-0">
-              <CardHeader>
-                <CardTitle>Quick Preference Areas</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                {[
-                  {
-                    icon: Palette,
-                    title: "Interface Style",
-                    description: "Warm light workspace with softer surfaces and stronger readability.",
-                  },
-                  {
-                    icon: Briefcase,
-                    title: "Workspace Identity",
-                    description: `${profile?.workspace_name ?? "Clever Vault"} is configured as a ${profile?.plan ?? "Pro"} workspace.`,
-                  },
-                  {
-                    icon: BellRing,
-                    title: "Notification Rhythm",
-                    description: profile?.weekly_digest
-                      ? "Weekly summaries are enabled for workspace activity."
-                      : "Notification summaries are currently muted.",
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="rounded-3xl border border-border/80 bg-white/75 p-4">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <item.icon className="h-5 w-5" />
-                    </div>
-                    <p className="font-semibold text-foreground">{item.title}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
         </section>
       </DashboardLayout>

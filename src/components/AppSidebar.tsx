@@ -200,7 +200,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-[17.5rem]"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-16" : "w-[17.5rem] max-w-[85vw]"} collapsible="icon">
       <input
         ref={fileInputRef}
         type="file"

@@ -385,7 +385,7 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="share-url">Share Link</Label>
-                <div className="flex space-x-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     id="share-url"
                     value={shareUrl}
@@ -396,6 +396,7 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
                     size="icon"
                     variant="outline"
                     onClick={copyToClipboard}
+                    className="w-full sm:w-11"
                   >
                     {copied ? (
                       <Check className="h-4 w-4 text-green-500" />
@@ -443,7 +444,7 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
                 </div>
 
                 {isPasswordEnabled && (
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                       type="password"
                       placeholder="Enter password"
@@ -455,6 +456,7 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
                       variant="outline"
                       onClick={savePassword}
                       disabled={loading || !password.trim()}
+                      className="w-full sm:w-auto"
                     >
                       Save
                     </Button>

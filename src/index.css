@@ -143,6 +143,20 @@
       radial-gradient(circle at top right, hsl(34 45% 94% / 0.85), transparent 24%),
       linear-gradient(180deg, hsl(var(--background)), hsl(30 30% 95%));
     min-height: 100vh;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html {
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
   }
 }
 
@@ -172,6 +186,22 @@
 
   .file-item {
     @apply glass-card p-4 transition-all duration-200 hover:scale-[1.01] hover:bg-accent/50 hover:shadow-lg;
+  }
+
+  .page-shell {
+    @apply px-3 pb-8 pt-4 sm:px-4 md:px-6 md:pb-12 md:pt-6;
+  }
+
+  .page-container {
+    @apply mx-auto w-full max-w-7xl space-y-4 md:space-y-6;
+  }
+
+  .responsive-card-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:gap-4;
+  }
+
+  .mobile-scroll-table {
+    @apply -mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0;
   }
 
   .sidebar-scroll {

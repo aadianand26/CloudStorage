@@ -107,7 +107,7 @@ export const Landing = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-[#fffaf3] to-[#f3e6d8]">
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-4">
           <BrandLogo text="Clever Vault" />
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -121,13 +121,13 @@ export const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center max-w-4xl">
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
+      <section className="px-4 py-14 md:py-20">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h1 className="mb-6 text-4xl font-bold leading-tight text-foreground sm:text-5xl md:text-7xl">
             Intelligent Cloud Storage
             <span className="gradient-text block">Powered by AI</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="mx-auto mb-8 max-w-2xl text-base text-muted-foreground sm:text-lg md:text-xl">
             Store, organize, and discover your files with the power of artificial intelligence. 
             Get insights, automated tagging, and smart search in one beautiful platform.
           </p>
@@ -142,16 +142,16 @@ export const Landing = () => {
               Watch Demo
             </Button>
           </div>
-          <div className="mt-12 flex items-center justify-center space-x-6 text-muted-foreground">
-            <div className="flex items-center space-x-2">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground sm:gap-6 sm:text-base">
+            <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               <span>10,000+ users</span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Star className="h-5 w-5 fill-current text-yellow-500" />
               <span>4.9/5 rating</span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
               <span>1M+ files stored</span>
             </div>

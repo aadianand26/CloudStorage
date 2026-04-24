@@ -676,7 +676,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                           variant={file.is_starred ? "default" : "ghost"}
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleStar(file); }}
-                          className="h-7 w-7 p-0"
+                          className="h-10 w-10 p-0"
                           title={file.is_starred ? "Unstar" : "Star"}
                         >
                           <Star className={`h-3 w-3 ${file.is_starred ? 'fill-current' : ''}`} />
@@ -686,7 +686,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                           variant="ghost"
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadFile(file); }}
-                          className="h-7 w-7 p-0"
+                          className="h-10 w-10 p-0"
                           title="Download"
                         >
                           <Download className="h-3 w-3" />
@@ -696,7 +696,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                           variant="ghost"
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteFile(file); }}
-                          className="h-7 w-7 p-0 hover:text-destructive"
+                          className="h-10 w-10 p-0 hover:text-destructive"
                           title="Delete"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -765,7 +765,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                             variant={file.is_starred ? "default" : "ghost"}
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleStar(file); }}
-                            className="h-7 w-7 md:h-8 md:w-8 p-0"
+                            className="h-10 w-10 p-0"
                             title={file.is_starred ? "Unstar" : "Star"}
                           >
                             <Star className={`h-3 w-3 md:h-4 md:w-4 ${file.is_starred ? 'fill-current' : ''}`} />
@@ -775,7 +775,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                             variant="ghost"
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewerFile(file); }}
-                            className="h-7 w-7 md:h-8 md:w-8 p-0"
+                            className="h-10 w-10 p-0"
                             title="Preview"
                             aria-label="Preview file"
                           >
@@ -786,7 +786,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                             variant="ghost"
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareFile(file); }}
-                            className="h-7 w-7 md:h-8 md:w-8 p-0"
+                            className="h-10 w-10 p-0"
                             title="Share"
                           >
                             <Share2 className="h-3 w-3 md:h-4 md:w-4" />
@@ -796,7 +796,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                             variant={fileSummaries[file.id] ? "default" : "ghost"}
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); generateSummary(file); }}
-                            className="h-7 min-w-[80px] px-2 text-xs md:h-8 md:px-3"
+                            className="min-h-10 min-w-[88px] px-2 text-xs md:px-3"
                             title={fileSummaries[file.id] ? "Remove AI Summary" : "Generate AI Summary"}
                           >
                             <Brain className="h-3 w-3 md:h-4 md:w-4 mr-1" />
@@ -808,7 +808,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                             variant="ghost"
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadFile(file); }}
-                            className="h-7 w-7 md:h-8 md:w-8 p-0"
+                            className="h-10 w-10 p-0"
                             title="Download"
                           >
                             <Download className="h-3 w-3 md:h-4 md:w-4" />
@@ -818,7 +818,7 @@ export const FileGrid = ({ searchTerm: propSearchTerm = '', activeTab: propActiv
                             variant="ghost"
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteFile(file); }}
-                            className="h-7 w-7 md:h-8 md:w-8 p-0 hover:text-destructive"
+                            className="h-10 w-10 p-0 hover:text-destructive"
                             title="Delete"
                           >
                             <Trash2 className="h-3 w-3 md:h-4 md:w-4" />

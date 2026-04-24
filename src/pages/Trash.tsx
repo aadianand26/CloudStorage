@@ -4,18 +4,12 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, FileIcon, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-interface StoredFile {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  deleted_at: string;
-  url: string | null;
-}
+type StoredFile = Tables<"files">;
 
 const Trash = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,8 +21,8 @@ const Trash = () => {
     if (!user) return;
 
     const fetchDeletedFiles = async () => {
-      const { data, error } = await (supabase
-        .from('files') as any)
+      const { data, error } = await supabase
+        .from('files')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_deleted', true)
@@ -67,8 +61,8 @@ const Trash = () => {
   }, [user]);
 
   const handleRestore = async (fileId: string) => {
-    const { error } = await (supabase
-      .from('files') as any)
+    const { error } = await supabase
+      .from('files')
       .update({ is_deleted: false, deleted_at: null })
       .eq('id', fileId);
 
@@ -99,9 +93,9 @@ const Trash = () => {
   return (
     <ProtectedRoute>
       <DashboardLayout onSearch={setSearchTerm}>
-        <section className="px-6 pt-6 pb-12">
-          <div className="max-w-7xl mx-auto">
-            <Card>
+        <section className="page-shell">
+          <div className="page-container">
+            <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trash2 className="h-5 w-5" />
@@ -116,23 +110,24 @@ const Trash = () => {
                 ) : filteredFiles.length === 0 ? (
                   <p className="text-muted-foreground">No deleted files.</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="responsive-card-grid">
                     {filteredFiles.map((file) => (
-                      <Card key={file.id} className="p-4">
+                      <Card key={file.id} className="min-w-0 p-4">
                         <div className="flex items-start gap-3">
-                          <FileIcon className="h-8 w-8 text-muted-foreground flex-shrink-0" />
+                          <FileIcon className="h-8 w-8 flex-shrink-0 text-muted-foreground" />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{file.name}</p>
+                            <p className="break-words font-medium">{file.name}</p>
                             <p className="text-sm text-muted-foreground">
                               {(file.size / 1024).toFixed(2)} KB
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Deleted: {new Date(file.deleted_at).toLocaleDateString()}
                             </p>
-                            <div className="flex gap-2 mt-3">
+                            <div className="mt-3 grid gap-2 sm:flex">
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="w-full sm:w-auto"
                                 onClick={() => handleRestore(file.id)}
                               >
                                 <RotateCcw className="h-3 w-3 mr-1" />
@@ -141,6 +136,7 @@ const Trash = () => {
                               <Button
                                 size="sm"
                                 variant="destructive"
+                                className="w-full sm:w-auto"
                                 onClick={() => handlePermanentDelete(file.id)}
                               >
                                 Delete

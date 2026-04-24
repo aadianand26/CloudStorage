@@ -38,26 +38,26 @@ const Pricing = () => {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <section className="px-6 pt-16 pb-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h1 className="text-5xl font-bold mb-4 gradient-text">
+        <section className="page-shell">
+          <div className="page-container">
+            <div className="mb-8 text-center md:mb-14">
+              <h1 className="mb-4 text-3xl font-bold gradient-text sm:text-4xl lg:text-5xl">
                 Simple, Transparent Pricing
               </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="mx-auto max-w-2xl text-base text-muted-foreground md:text-xl">
                 Start with 10MB free storage, then pay only for what you use
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2 md:gap-8">
               {/* Free Tier */}
-              <Card className="border-2">
+              <Card className="glass-card border-2">
                 <CardHeader>
                   <CardTitle className="text-2xl">Free Tier</CardTitle>
                   <CardDescription>Perfect to get started</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-4xl font-bold">$0</div>
+                  <div className="text-3xl font-bold sm:text-4xl">$0</div>
                   <ul className="space-y-3">
                     <li className="flex items-center gap-2">
                       <Check className="h-5 w-5 text-primary" />
@@ -85,13 +85,13 @@ const Pricing = () => {
               </Card>
 
               {/* Pay As You Go */}
-              <Card className="border-2 border-primary">
+              <Card className="glass-card border-2 border-primary">
                 <CardHeader>
                   <CardTitle className="text-2xl">Pay As You Go</CardTitle>
                   <CardDescription>Scale as your needs grow</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-4xl font-bold">
+                  <div className="text-3xl font-bold sm:text-4xl">
                     $2<span className="text-lg text-muted-foreground">/GB</span>
                   </div>
                   <ul className="space-y-3">
@@ -125,9 +125,9 @@ const Pricing = () => {
               </Card>
             </div>
 
-            <div className="mt-16 text-center">
+            <div className="mt-10 text-center md:mt-16">
               <h2 className="text-2xl font-bold mb-8">Frequently Asked Questions</h2>
-              <div className="max-w-2xl mx-auto space-y-6 text-left">
+              <div className="mx-auto max-w-2xl space-y-6 text-left">
                 <div>
                   <h3 className="font-semibold text-lg mb-2">How does billing work?</h3>
                   <p className="text-muted-foreground">

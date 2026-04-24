@@ -7,8 +7,8 @@ const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   return <ProtectedRoute>
       <DashboardLayout onSearch={setSearchTerm}>
-        <section className="px-3 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12">
-          <div className="mx-auto w-full max-w-7xl space-y-4 md:space-y-6">
+        <section className="page-shell">
+          <div className="page-container">
             <div className="mb-0">
               <FileUpload />
             </div>

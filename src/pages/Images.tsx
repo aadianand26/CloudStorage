@@ -10,18 +10,18 @@ const Images = () => {
   return (
     <ProtectedRoute>
       <DashboardLayout onSearch={setSearchTerm}>
-        <section className="px-6 pt-8 pb-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold mb-4 gradient-text">
+        <section className="page-shell">
+          <div className="page-container">
+            <div className="mb-6 text-center md:mb-10">
+              <h1 className="mb-3 text-3xl font-bold gradient-text sm:text-4xl">
                 Images
               </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base md:text-lg">
                 View and manage all your image files
               </p>
             </div>
 
-            <div className="mb-12">
+            <div className="mb-4 md:mb-6">
               <FileUpload />
             </div>
 

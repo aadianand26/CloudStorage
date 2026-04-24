@@ -5,21 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, FileIcon, Eye, Download, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { FileViewer } from "@/components/FileViewer";
 import { ShareDialog } from "@/components/ShareDialog";
 
-interface StoredFile {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  storage_path: string;
-  last_accessed_at: string;
-  url: string | null;
-  is_shared?: boolean;
-}
+type StoredFile = Tables<"files">;
 
 const Recent = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,8 +29,8 @@ const Recent = () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const { data, error } = await (supabase
-        .from('files') as any)
+      const { data, error } = await supabase
+        .from('files')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_deleted', false)
@@ -131,9 +123,9 @@ const Recent = () => {
           onClose={() => setShareFile(null)}
         />
 
-        <section className="px-6 pt-6 pb-12">
-          <div className="max-w-7xl mx-auto">
-            <Card>
+        <section className="page-shell">
+          <div className="page-container">
+            <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
@@ -154,11 +146,11 @@ const Recent = () => {
                     <p className="text-muted-foreground">No recent files. Open a file to see it here.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="responsive-card-grid">
                       {filteredFiles.map((file) => (
                         <Card
                           key={file.id}
-                          className="p-4 hover:border-primary/30 transition-colors cursor-pointer"
+                          className="min-w-0 cursor-pointer p-4 transition-colors hover:border-primary/30"
                           role="button"
                           tabIndex={0}
                           onClick={() => setViewerFile(file)}
@@ -167,20 +159,20 @@ const Recent = () => {
                         <div className="flex items-start gap-3">
                           <FileIcon className="h-8 w-8 text-muted-foreground flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate mb-1">{file.name}</p>
+                            <p className="mb-1 break-words font-medium">{file.name}</p>
                             <p className="text-sm text-muted-foreground mb-2">
                               {(file.size / 1024).toFixed(2)} KB
                             </p>
                             <p className="text-xs text-muted-foreground mb-3">
                               Accessed: {new Date(file.last_accessed_at).toLocaleDateString()}
                             </p>
-                            <div className="flex items-center gap-1">
+                            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-1">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewerFile(file); }}
-                                className="h-7 px-2"
+                                className="px-2"
                                 aria-label="Preview file"
                               >
                                 <Eye className="h-3 w-3 mr-1" />
@@ -191,7 +183,7 @@ const Recent = () => {
                         variant="ghost"
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareFile(file); }}
-                        className="h-7 w-7 p-0"
+                        className="p-0"
                       >
                         <Share2 className="h-3 w-3" />
                               </Button>
@@ -200,7 +192,7 @@ const Recent = () => {
                         variant="ghost"
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadFile(file); }}
-                        className="h-7 w-7 p-0"
+                        className="p-0"
                       >
                         <Download className="h-3 w-3" />
                               </Button>

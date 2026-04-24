@@ -104,13 +104,14 @@ const SharedView = () => {
       } else {
         setError('File not found or no longer shared');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching shared file:', err);
+      const message = err instanceof Error ? err.message : 'Failed to load shared file';
       if (!passwordRequired) {
-        setError(err.message || 'Failed to load shared file');
+        setError(message);
         toast({
           title: 'Error',
-          description: err.message || 'Could not load the shared file',
+          description: message || 'Could not load the shared file',
           variant: 'destructive',
         });
       }
@@ -161,7 +162,7 @@ const SharedView = () => {
   if (passwordRequired && !file) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 space-y-6">
+        <Card className="w-full max-w-md space-y-6 p-5 sm:p-8">
           <div className="text-center space-y-4">
             <BrandLogo className="justify-center" showText={false} imageClassName="h-14 w-14" />
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -222,7 +223,7 @@ const SharedView = () => {
   if (error || !file) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center space-y-6">
+        <Card className="w-full max-w-md space-y-6 p-5 text-center sm:p-8">
           <BrandLogo className="justify-center" showText={false} imageClassName="h-14 w-14" />
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${isExpired ? 'bg-warning/10' : 'bg-destructive/10'}`}>
             {isExpired ? (
@@ -322,8 +323,8 @@ const SharedView = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="container mx-auto flex min-h-16 items-center justify-between gap-3 px-3 py-2 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <BrandLogo showText={false} imageClassName="h-9 w-9" />
             {getFileIcon()}
             <div className="min-w-0 flex-1">
@@ -333,10 +334,10 @@ const SharedView = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="mr-2 h-4 w-4" />
-              Download
+              <span className="hidden sm:inline">Download</span>
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/">
