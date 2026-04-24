@@ -104,7 +104,7 @@ async function extractTextWithOCR(base64Data: string, mimeType: string): Promise
     console.log(`Calling AI gateway for OCR extraction, mime: ${imageMimeType}, base64 length: ${base64Data.length}`);
     
     const requestBody = {
-      model: 'google/gemini-2.5-flash',
+      model: 'gpt-4-turbo',
       messages: [
         {
           role: 'user',
