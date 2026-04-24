@@ -127,18 +127,42 @@ const AiAssistant = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase function error:", error);
+        throw new Error(error?.message || "AI function invocation failed");
+      }
+
+      if (!data) {
+        throw new Error("No response received from AI function");
+      }
 
       const analysis = String(data?.analysis || "").trim();
       setPrompt(effectivePrompt);
       setResponse(analysis || "No response was returned for this workspace prompt.");
     } catch (error) {
       console.error("Assistant request failed:", error);
-      toast({
-        title: "Assistant unavailable",
-        description: "The AI request failed. Please try again in a moment.",
-        variant: "destructive",
-      });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Check if it's a configuration error
+      if (errorMessage.includes("AI_GATEWAY") || errorMessage.includes("not configured")) {
+        toast({
+          title: "AI Gateway not configured",
+          description: "Please add AI_GATEWAY_API_KEY and AI_GATEWAY_URL to your Supabase edge function secrets.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes("429") || errorMessage.includes("rate limit")) {
+        toast({
+          title: "Rate limit exceeded",
+          description: "Too many requests. Please wait a moment and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Assistant unavailable",
+          description: errorMessage || "The AI request failed. Please try again in a moment.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -262,7 +286,36 @@ const AiAssistant = () => {
                   <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{response}</p>
                 </CardContent>
               </Card>
-            ) : null}
+            ) : (
+              <Card className="glass-card border-0 border-2 border-yellow-200/50 bg-yellow-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-yellow-900">
+                    <Lightbulb className="h-5 w-5" />
+                    Setup Required
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-yellow-800">
+                    The AI Assistant requires API credentials to work. Please follow these steps:
+                  </p>
+                  <ol className="space-y-2 text-sm text-yellow-800 list-decimal list-inside">
+                    <li>Sign up for an AI service (Google Generative AI, Together AI, or Anthropic Claude)</li>
+                    <li>Get your API key from the service</li>
+                    <li>Go to your Supabase project → Edge Functions → Secrets</li>
+                    <li>Add two secrets:
+                      <ul className="ml-4 mt-1 space-y-1 list-disc list-inside">
+                        <li><code className="bg-yellow-100 px-2 py-0.5 rounded text-xs">AI_GATEWAY_API_KEY</code></li>
+                        <li><code className="bg-yellow-100 px-2 py-0.5 rounded text-xs">AI_GATEWAY_URL</code></li>
+                      </ul>
+                    </li>
+                    <li>Refresh this page and try again</li>
+                  </ol>
+                  <p className="text-xs text-yellow-700 mt-4">
+                    See <code className="bg-yellow-100 px-2 py-1 rounded">AI_SETUP_GUIDE.md</code> in the project root for detailed instructions.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
               <Card className="glass-card border-0">

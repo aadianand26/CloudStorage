@@ -57,15 +57,32 @@ serve(async (req) => {
       workspaceContext,
       analysisType = 'summary',
     } = await req.json();
+    
+    console.log(`AI-analyze function called: analysisType=${analysisType}, fileName=${fileName}`);
+    
     const aiGatewayApiKey = Deno.env.get("AI_GATEWAY_API_KEY");
     const aiGatewayUrl = Deno.env.get("AI_GATEWAY_URL");
     
     if (!aiGatewayApiKey) {
-      throw new Error("AI_GATEWAY_API_KEY is not configured");
+      console.error("AI_GATEWAY_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "AI_GATEWAY_API_KEY is not configured. Please set it in your Supabase project secrets.",
+          analysis: null
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (!aiGatewayUrl) {
-      throw new Error("AI_GATEWAY_URL is not configured");
+      console.error("AI_GATEWAY_URL is not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "AI_GATEWAY_URL is not configured. Please set it in your Supabase project secrets.",
+          analysis: null
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     let systemPrompt = "";
@@ -131,14 +148,18 @@ ${(workspaceContext || fileContent || "No workspace context available.").substri
       }),
     });
 
+    console.log(`AI Gateway Response Status: ${response.status}`);
+
     if (!response.ok) {
       if (response.status === 429) {
+        console.error("Rate limit exceeded from AI gateway");
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
+        console.error("Payment required from AI gateway");
         return new Response(JSON.stringify({ error: "Payment required. Please add credits to your workspace." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -146,14 +167,14 @@ ${(workspaceContext || fileContent || "No workspace context available.").substri
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
+      return new Response(JSON.stringify({ error: `AI analysis failed: ${errorText}` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    const analysis = data.choices?.[0]?.message?.content || "Unable to generate summary for this file.";
+    const analysis = data.choices?.[0]?.message?.content || "Unable to generate response for this workspace prompt.";
 
     return new Response(JSON.stringify({ analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
