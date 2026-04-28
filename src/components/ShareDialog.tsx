@@ -22,6 +22,12 @@ interface ShareDialogProps {
   onClose: () => void;
 }
 
+type ShareFileSettings = {
+  share_token: string | null;
+  share_expires_at: string | null;
+  share_password: string | null;
+};
+
 const EXPIRATION_OPTIONS = [
   { value: 'never', label: 'Never expires' },
   { value: '1h', label: '1 hour' },
@@ -63,24 +69,47 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
     }
   }, [file]);
 
+  const getFileShareSettings = async (): Promise<ShareFileSettings> => {
+    if (!file) throw new Error('No file selected');
+
+    const { data: fileData, error: fileError } = await supabase
+      .from('files')
+      .select('share_token, share_expires_at, share_password')
+      .eq('id', file.id)
+      .single();
+
+    if (fileError) throw fileError;
+
+    let shareToken = fileData.share_token;
+    if (!shareToken) {
+      shareToken = crypto.randomUUID();
+      const { error: tokenError } = await supabase
+        .from('files')
+        .update({ share_token: shareToken })
+        .eq('id', file.id);
+
+      if (tokenError) throw tokenError;
+    }
+
+    return {
+      share_token: shareToken,
+      share_expires_at: fileData.share_expires_at,
+      share_password: fileData.share_password,
+    };
+  };
+
   const generateShareUrl = async () => {
     if (!file) return;
 
     try {
-      const { data: fileData, error: fileError } = await supabase
-        .from('files')
-        .select('share_token, share_expires_at, share_password')
-        .eq('id', file.id)
-        .single();
-
-      if (fileError) throw fileError;
+      const fileData = await getFileShareSettings();
 
       const baseUrl = window.location.origin;
       const shareLink = `${baseUrl}/share?token=${fileData.share_token}`;
       setShareUrl(shareLink);
       setCurrentExpiry(fileData.share_expires_at);
       setIsPasswordEnabled(!!fileData.share_password);
-      setPassword(fileData.share_password || '');
+      setPassword('');
     } catch (error) {
       console.error('Error generating share URL:', error);
       toast({
@@ -125,16 +154,28 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
     setLoading(true);
 
     try {
+      if (nextShared && isPasswordEnabled && !password.trim()) {
+        setIsShared(prev.isShared);
+        toast({
+          title: 'Password required',
+          description: 'Enter a password before enabling password-protected sharing',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const expiresAt = nextShared ? getExpirationDate(expiration) : null;
       // Hash password before storing
       const sharePassword = nextShared && isPasswordEnabled && password.trim() 
         ? await hashPassword(password.trim()) 
         : null;
+      const shareToken = nextShared ? (await getFileShareSettings()).share_token : null;
 
       const { error } = await supabase
         .from('files')
         .update({
           is_shared: nextShared,
+          share_token: shareToken,
           share_expires_at: expiresAt,
           share_password: nextShared ? sharePassword : null,
         })
@@ -145,6 +186,7 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
       if (nextShared) {
         setCurrentExpiry(expiresAt);
         await generateShareUrl();
+        setPassword('');
         toast({
           title: 'Sharing enabled',
           description: expiresAt
@@ -447,7 +489,7 @@ export const ShareDialog = ({ file, open, onClose }: ShareDialogProps) => {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                       type="password"
-                      placeholder="Enter password"
+                      placeholder="Enter new password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="flex-1"
